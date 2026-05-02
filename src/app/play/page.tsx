@@ -75,9 +75,7 @@ export default function PlayScreen() {
     setBalloon(0)
     setPumps(0)
     updateStatus('ready')
-    const socket = getSocket()
-    if (sessionId) socket.emit('game-reset', { sessionId })
-  }, [stopDecay, sessionId])
+  }, [stopDecay])
 
   useEffect(() => {
     const socket = getSocket()
@@ -97,6 +95,8 @@ export default function PlayScreen() {
 
     socket.on('game-start', () => startGame())
 
+    socket.on('game-reset', () => resetGame())
+
     socket.on('pump', () => {
       if (statusRef.current !== 'inflating') return
       setPumps(p => p + 1)
@@ -110,10 +110,11 @@ export default function PlayScreen() {
       socket.off('controller-connected')
       socket.off('controller-disconnected')
       socket.off('game-start')
+      socket.off('game-reset')
       socket.off('pump')
       stopDecay()
     }
-  }, [stopDecay, handleSuccess])
+  }, [stopDecay, handleSuccess, resetGame])
 
   const px = balloonPx(balloon)
   const pct = Math.round((balloon / WIN_THRESHOLD) * 100)
@@ -227,9 +228,7 @@ export default function PlayScreen() {
             </div>
             <p style={styles.successTitle}>PERFECT INFLATION!</p>
             <p style={styles.successSub}>{pumps} pumps</p>
-            <button style={styles.playAgainBtn} onClick={resetGame}>
-              PLAY AGAIN
-            </button>
+            <p style={styles.waitingHint}>Play again from your phone</p>
           </div>
         )}
       </div>

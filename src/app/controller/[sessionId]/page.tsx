@@ -31,17 +31,11 @@ export default function ControllerScreen({ params }: { params: Promise<{ session
 
     socket.on('game-over', () => setStatus('finished'))
 
-    socket.on('game-reset', () => {
-      setPumps(0)
-      setStatus('waiting-start')
-    })
-
     socket.on('play-disconnected', () => setStatus('disconnected'))
 
     return () => {
       socket.off('game-started')
       socket.off('game-over')
-      socket.off('game-reset')
       socket.off('play-disconnected')
     }
   }, [sessionId])
@@ -102,7 +96,17 @@ export default function ControllerScreen({ params }: { params: Promise<{ session
           <div style={styles.centeredMessage}>
             <p style={{ ...styles.messageText, fontSize: 48 }}>🎈</p>
             <p style={styles.messageText}>Nice!</p>
-            <p style={styles.subText}>Waiting for host to restart...</p>
+            <button
+              style={styles.startBtn}
+              onPointerDown={() => {
+                const socket = getSocket()
+                socket.emit('game-reset', { sessionId })
+                setPumps(0)
+                setStatus('waiting-start')
+              }}
+            >
+              PLAY AGAIN
+            </button>
           </div>
         )}
 

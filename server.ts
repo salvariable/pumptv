@@ -74,10 +74,8 @@ app.prepare().then(() => {
 
     socket.on('game-reset', (data: { sessionId: string }) => {
       const session = sessions.get(data.sessionId)
-      if (!session) return
-      if (session.controllerSocketId) {
-        io.to(session.controllerSocketId).emit('game-reset')
-      }
+      if (!session || session.controllerSocketId !== socket.id) return
+      io.to(session.playSocketId).emit('game-reset')
     })
 
     socket.on('disconnect', () => {
