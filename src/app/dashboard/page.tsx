@@ -131,6 +131,7 @@ export default function Dashboard() {
   const [data, setData] = useState<DashboardData | null>(null)
   const [triggering, setTriggering] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [runStartedAt, setRunStartedAt] = useState<number | null>(null)
 
   const fetchData = useCallback(async () => {
     try {
@@ -149,6 +150,7 @@ export default function Dashboard() {
     if (triggering || data?.status === 'running') return
     setTriggering(true)
     setError(null)
+    setRunStartedAt(Date.now())
     try {
       const res = await fetch('/api/run-agents', { method: 'POST' })
       if (res.status === 409) { setError('Already running'); return }
@@ -161,6 +163,11 @@ export default function Dashboard() {
   }
 
   const isRunning = data?.status === 'running' || triggering
+
+  const completed = runStartedAt && data
+    ? data.agents.filter(a => a.lastRun && a.lastRun.timestamp > runStartedAt).length
+    : 0
+  const progressPct = isRunning ? (completed / 4) * 100 : (data ? 100 : 0)
 
   return (
     <div style={root}>
@@ -198,6 +205,21 @@ export default function Dashboard() {
             />
           ))
         )}
+      </div>
+
+      {/* Progress bar */}
+      <div style={progressTrack}>
+        <div style={{
+          height: '100%',
+          width: `${progressPct}%`,
+          background: isRunning
+            ? 'linear-gradient(90deg, #818cf8, #a78bfa, #818cf8)'
+            : 'rgba(129,140,248,0.3)',
+          backgroundSize: '200% 100%',
+          borderRadius: 2,
+          transition: isRunning ? 'width 1.2s ease' : 'width 0.3s ease, background 0.5s ease',
+          animation: isRunning ? 'progress-shimmer 1.8s linear infinite' : undefined,
+        }} />
       </div>
 
       {/* Footer */}
@@ -367,6 +389,12 @@ const timestamp: React.CSSProperties = {
   fontSize: 11,
   color: 'rgba(255,255,255,0.2)',
   letterSpacing: 0.5,
+}
+
+const progressTrack: React.CSSProperties = {
+  height: 3,
+  background: 'rgba(255,255,255,0.04)',
+  flexShrink: 0,
 }
 
 const footer: React.CSSProperties = {
