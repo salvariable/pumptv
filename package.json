@@ -10,7 +10,10 @@
     "agent:speed": "tsx agents/speed-demon.ts",
     "agent:human": "tsx agents/average-human.ts",
     "agent:strat": "tsx agents/strategist.ts",
-    "agent:surv": "tsx agents/survivor.ts"
+    "agent:surv": "tsx agents/survivor.ts",
+    "agent:qbot": "tsx agents/q-learner.ts",
+    "agent:bndt": "tsx agents/bandit.ts",
+    "agent:nnbt": "tsx agents/neural-net.ts"
   },
   "dependencies": {
     "next": "^15.3.1",

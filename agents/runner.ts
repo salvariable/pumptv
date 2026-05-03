@@ -2,6 +2,9 @@ import { runSpeedDemon }   from './speed-demon.js'
 import { runAverageHuman } from './average-human.js'
 import { runStrategist }   from './strategist.js'
 import { runSurvivor }     from './survivor.js'
+import { runQLearner }     from './q-learner.js'
+import { runBandit }       from './bandit.js'
+import { runNeuralNet }    from './neural-net.js'
 import { SERVER_URL, AgentRunResult } from './lib/session.js'
 
 const RESET  = '\x1b[0m'
@@ -16,6 +19,9 @@ const agents: Array<{ name: string; run: () => Promise<AgentRunResult> }> = [
   { name: 'average-human', run: runAverageHuman },
   { name: 'strategist',    run: runStrategist },
   { name: 'survivor',      run: runSurvivor },
+  { name: 'q-learner',     run: runQLearner },
+  { name: 'bandit',        run: runBandit },
+  { name: 'neural-net',    run: runNeuralNet },
 ]
 
 async function reportToServer(result: AgentRunResult & { timestamp: number; durationMs: number }) {

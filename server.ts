@@ -54,7 +54,7 @@ interface StoredResult {
   durationMs: number
 }
 
-const AGENT_NAMES = ['stress-tester', 'boundary-player', 'disconnect-agent', 'latency-simulator']
+const AGENT_NAMES = ['speed-demon', 'average-human', 'strategist', 'survivor', 'q-learner', 'bandit', 'neural-net']
 const agentHistory = new Map<string, StoredResult[]>(AGENT_NAMES.map(n => [n, []]))
 const agentRecords = new Map<string, StoredResult>()
 let runStatus: 'idle' | 'running' = 'idle'
@@ -62,18 +62,9 @@ let runStatus: 'idle' | 'running' = 'idle'
 function isBetter(existing: StoredResult | undefined, next: StoredResult): boolean {
   if (!existing) return next.passed
   if (!next.passed) return false
-  const m = next.metrics
-  const e = existing.metrics
-  switch (next.name) {
-    case 'stress-tester':    return m.drops === 0 && m.ratePPS > (e.ratePPS ?? 0)
-    case 'boundary-player':  return m.drift < (e.drift ?? Infinity)
-    case 'disconnect-agent': return m.successRate > (e.successRate ?? 0)
-    case 'latency-simulator':
-      if (!m.won) return false
-      if (!e.won) return true
-      return m.timeToWinSec < e.timeToWinSec
-    default: return false
-  }
+  const m = next.metrics, e = existing.metrics
+  if (m.timeMs && e.timeMs) return m.timeMs < e.timeMs
+  return false
 }
 
 function storeResult(result: StoredResult) {
@@ -90,12 +81,15 @@ async function runAgentsBackground() {
   if (runStatus === 'running') return
   runStatus = 'running'
   try {
-    const { runSpeedDemon }    = await import('./agents/speed-demon.js')
-    const { runAverageHuman }  = await import('./agents/average-human.js')
-    const { runStrategist }    = await import('./agents/strategist.js')
-    const { runSurvivor }      = await import('./agents/survivor.js')
+    const { runSpeedDemon }   = await import('./agents/speed-demon.js')
+    const { runAverageHuman } = await import('./agents/average-human.js')
+    const { runStrategist }   = await import('./agents/strategist.js')
+    const { runSurvivor }     = await import('./agents/survivor.js')
+    const { runQLearner }     = await import('./agents/q-learner.js')
+    const { runBandit }       = await import('./agents/bandit.js')
+    const { runNeuralNet }    = await import('./agents/neural-net.js')
 
-    for (const run of [runSpeedDemon, runAverageHuman, runStrategist, runSurvivor]) {
+    for (const run of [runSpeedDemon, runAverageHuman, runStrategist, runSurvivor, runQLearner, runBandit, runNeuralNet]) {
       const start = Date.now()
       const result = await run()
       storeResult({ ...result, timestamp: Date.now(), durationMs: Date.now() - start })

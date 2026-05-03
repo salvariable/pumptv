@@ -75,6 +75,42 @@ const CATALOGUE = [
     techIsAI: false,
     techDetail: 'Exploits the fixed point: at pump_interval = DECAY_INTERVAL × PUMP_AMOUNT (420ms), net_gain = 0. Pumping at 300ms yields +0.86 units/cycle — the slowest positive convergence. No AI needed; this is mathematical exploitation of the reward structure.',
   },
+  {
+    id: 'q-learner',
+    tag: 'QBOT',
+    icon: '🧠',
+    color: '#a78bfa',
+    fullName: 'Q-Learner',
+    objective: 'Find the optimal pump rate through trial and error — no equations, just experience.',
+    strategy: 'Runs 600 simulated games before playing. Each episode updates a Q-table mapping balloon state → best interval. By the end, the table encodes what actually works.',
+    techCategory: 'Reinforcement Learning',
+    techIsAI: true,
+    techDetail: 'Q(s,a) ← Q(s,a) + α(r + γ·max Q(s\') − Q(s,a)). State = balloon bin (0–10), actions = [50, 100, 150, 200, 300]ms. ε-greedy exploration decays from 1.0→0.05. No human-defined formula — the policy emerges from the reward signal alone.',
+  },
+  {
+    id: 'bandit',
+    tag: 'BNDT',
+    icon: '🎰',
+    color: '#34d399',
+    fullName: 'Bandit',
+    objective: 'Commit to the best pump interval discovered through structured exploration.',
+    strategy: 'Simulates 40 games at each of 6 possible intervals, measures average completion time, then plays one real game with the winner.',
+    techCategory: 'Multi-Armed Bandit',
+    techIsAI: true,
+    techDetail: 'Classic exploration-exploitation tradeoff. Each arm is a pump interval: [75, 120, 160, 200, 280, 400]ms. After 240 simulations the arm with the lowest mean(timeMs | win) is selected. No online learning — it commits after exploration and never updates again.',
+  },
+  {
+    id: 'neural-net',
+    tag: 'NNBT',
+    icon: '🔬',
+    color: '#f472b6',
+    fullName: 'Neural Net',
+    objective: 'Use a trained neural network to decide whether to pump at each timestep.',
+    strategy: 'Polls the game state every 80ms and runs inference through a tiny MLP. Pumps if the network output exceeds 0.5.',
+    techCategory: 'Supervised Learning (MLP)',
+    techIsAI: true,
+    techDetail: 'Architecture: 2→4(ReLU)→1(sigmoid). Inputs: [balloon/100, elapsed/20000]. Weights trained offline via gradient descent on 10,000 simulated trajectories. Inference cost: ~0.01ms per forward pass. Unlike rule-based agents, the decision boundary is encoded in weight matrices — not in code.',
+  },
 ]
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -115,7 +151,7 @@ function Leaderboard({ scores }: { scores: Score[] }) {
         </tr>
       </thead>
       <tbody>
-        {scores.map((s, i) => {
+        {scores.slice(0, 10).map((s, i) => {
           const rankColor = RANK_COLORS[i] ?? 'rgba(255,255,255,0.4)'
           const cat = s.type === 'agent'
             ? CATALOGUE.find(c => c.id === s.agentId)
@@ -234,7 +270,7 @@ export default function Dashboard() {
   const completed = runStartedAt
     ? state.agents.filter(a => a.lastRun && a.lastRun.timestamp > runStartedAt).length
     : 0
-  const progressPct = isRunning ? (completed / 4) * 100 : (state.scores.length > 0 ? 100 : 0)
+  const progressPct = isRunning ? (completed / 7) * 100 : (state.scores.length > 0 ? 100 : 0)
 
   return (
     <div style={root}>
@@ -269,7 +305,7 @@ export default function Dashboard() {
         <section style={section}>
           <div style={sectionHeader}>
             <p style={sectionTitle}>AGENTS</p>
-            <p style={sectionSub}>Four scripted players, each with a different strategy. None of them are AI.</p>
+            <p style={sectionSub}>Seven players — four scripted, three AI. All compete on the same leaderboard.</p>
           </div>
           <div style={agentGrid}>
             {CATALOGUE.map(agent => (

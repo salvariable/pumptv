@@ -251,7 +251,7 @@ export default function PlayScreen() {
             <p style={styles.successSub}>{pumps} pumps</p>
             {!scoreSubmitted ? (
               <div style={styles.nameWrap}>
-                <p style={styles.nameLabel}>ENTER YOUR NAME</p>
+                <p style={styles.nameLabel}>ENTER YOUR INITIALS</p>
                 <div style={styles.nameRow}>
                   <input
                     style={styles.nameInput}
