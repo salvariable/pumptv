@@ -24,6 +24,25 @@ function generateSessionId(): string {
   return Math.random().toString(36).slice(2, 8).toUpperCase()
 }
 
+// ─── Leaderboard store ───────────────────────────────────────────────────────
+
+interface Score {
+  name: string
+  pumps: number
+  timeMs: number
+  type: 'human' | 'agent'
+  agentId?: string
+  timestamp: number
+}
+
+const scores: Score[] = []
+
+function addScore(score: Score) {
+  scores.push(score)
+  scores.sort((a, b) => a.timeMs - b.timeMs)
+  if (scores.length > 50) scores.pop()
+}
+
 // ─── Agent result store ───────────────────────────────────────────────────────
 
 interface StoredResult {
@@ -71,12 +90,12 @@ async function runAgentsBackground() {
   if (runStatus === 'running') return
   runStatus = 'running'
   try {
-    const { runStressTester }    = await import('./agents/stress-tester.js')
-    const { runBoundaryPlayer }  = await import('./agents/boundary-player.js')
-    const { runDisconnectAgent } = await import('./agents/disconnect-agent.js')
-    const { runLatencySimulator }= await import('./agents/latency-simulator.js')
+    const { runSpeedDemon }    = await import('./agents/speed-demon.js')
+    const { runAverageHuman }  = await import('./agents/average-human.js')
+    const { runStrategist }    = await import('./agents/strategist.js')
+    const { runSurvivor }      = await import('./agents/survivor.js')
 
-    for (const run of [runStressTester, runBoundaryPlayer, runDisconnectAgent, runLatencySimulator]) {
+    for (const run of [runSpeedDemon, runAverageHuman, runStrategist, runSurvivor]) {
       const start = Date.now()
       const result = await run()
       storeResult({ ...result, timestamp: Date.now(), durationMs: Date.now() - start })
@@ -132,6 +151,22 @@ async function handlePostAgentResults(req: IncomingMessage, res: ServerResponse)
   }
 }
 
+function handleGetScores(res: ServerResponse) {
+  res.writeHead(200, { 'Content-Type': 'application/json' })
+  res.end(JSON.stringify(scores))
+}
+
+async function handlePostScore(req: IncomingMessage, res: ServerResponse) {
+  const body = await readBody(req)
+  try {
+    addScore(JSON.parse(body) as Score)
+    res.writeHead(200, { 'Content-Type': 'application/json' })
+    res.end(JSON.stringify({ ok: true }))
+  } catch {
+    res.writeHead(400); res.end()
+  }
+}
+
 function handleRunAgents(res: ServerResponse) {
   if (runStatus === 'running') {
     res.writeHead(409, { 'Content-Type': 'application/json' })
@@ -152,6 +187,8 @@ app.prepare().then(() => {
     if (method === 'GET'  && url === '/api/agent-results')     { handleGetAgentResults(res); return }
     if (method === 'POST' && url === '/api/agent-results')     { await handlePostAgentResults(req, res); return }
     if (method === 'POST' && url === '/api/run-agents')        { handleRunAgents(res); return }
+    if (method === 'GET'  && url === '/api/scores')            { handleGetScores(res); return }
+    if (method === 'POST' && url === '/api/scores')            { await handlePostScore(req, res); return }
     handle(req, res, parse(url!, true))
   })
 

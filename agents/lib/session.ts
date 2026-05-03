@@ -89,6 +89,16 @@ export function simulateBalloon(pumps: number, elapsedMs: number): number {
   return Math.max(0, Math.min(WIN_THRESHOLD, pumps * PUMP_AMOUNT - decayTicks * DECAY_AMOUNT))
 }
 
+export async function submitScore(name: string, pumps: number, timeMs: number, agentId: string) {
+  try {
+    await fetch(`${SERVER_URL}/api/scores`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, pumps, timeMs, type: 'agent', agentId, timestamp: Date.now() }),
+    })
+  } catch { /* server may not have the endpoint yet */ }
+}
+
 export function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms))
 }

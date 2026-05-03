@@ -30,8 +30,12 @@ export default function PlayScreen() {
   const [status, setStatus] = useState<Status>('waiting-controller')
   const [balloon, setBalloon] = useState(0)
   const [pumps, setPumps] = useState(0)
+  const [nameInput, setNameInput] = useState('')
+  const [scoreSubmitted, setScoreSubmitted] = useState(false)
 
   const balloonRef = useRef(0)
+  const pumpsRef = useRef(0)
+  const gameStartRef = useRef(0)
   const decayRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const statusRef = useRef<Status>('waiting-controller')
   const sessionIdRef = useRef<string | null>(null)
@@ -57,12 +61,16 @@ export default function PlayScreen() {
   const handleSuccess = useCallback(() => {
     stopDecay()
     updateStatus('success')
+    setScoreSubmitted(false)
+    setNameInput('')
     const socket = getSocket()
     if (sessionIdRef.current) socket.emit('game-over', { sessionId: sessionIdRef.current })
   }, [stopDecay])
 
   const startGame = useCallback(() => {
     balloonRef.current = 0
+    pumpsRef.current = 0
+    gameStartRef.current = Date.now()
     setBalloon(0)
     setPumps(0)
     updateStatus('inflating')
@@ -76,6 +84,18 @@ export default function PlayScreen() {
     setPumps(0)
     updateStatus('ready')
   }, [stopDecay])
+
+  const submitScore = useCallback(async (name: string) => {
+    const timeMs = Date.now() - gameStartRef.current
+    try {
+      await fetch('/api/scores', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name || '???', pumps: pumpsRef.current, timeMs, type: 'human', timestamp: Date.now() }),
+      })
+    } catch { /* ignore */ }
+    setScoreSubmitted(true)
+  }, [])
 
   useEffect(() => {
     const socket = getSocket()
@@ -99,6 +119,7 @@ export default function PlayScreen() {
 
     socket.on('pump', () => {
       if (statusRef.current !== 'inflating') return
+      pumpsRef.current++
       setPumps(p => p + 1)
       const next = Math.min(WIN_THRESHOLD, balloonRef.current + PUMP_AMOUNT)
       balloonRef.current = next
@@ -228,6 +249,25 @@ export default function PlayScreen() {
             </div>
             <p style={styles.successTitle}>PERFECT INFLATION!</p>
             <p style={styles.successSub}>{pumps} pumps</p>
+            {!scoreSubmitted ? (
+              <div style={styles.nameWrap}>
+                <p style={styles.nameLabel}>ENTER YOUR NAME</p>
+                <div style={styles.nameRow}>
+                  <input
+                    style={styles.nameInput}
+                    maxLength={3}
+                    value={nameInput}
+                    autoFocus
+                    onChange={e => setNameInput(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
+                    onKeyDown={e => e.key === 'Enter' && submitScore(nameInput)}
+                    placeholder="AAA"
+                  />
+                  <button style={styles.nameBtn} onClick={() => submitScore(nameInput)}>OK</button>
+                </div>
+              </div>
+            ) : (
+              <a href="/dashboard" style={styles.leaderboardLink}>View leaderboard →</a>
+            )}
             <p style={styles.waitingHint}>Play again from your phone</p>
           </div>
         )}
@@ -454,6 +494,52 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 16,
     color: 'rgba(255,255,255,0.4)',
     letterSpacing: 2,
+  },
+  nameWrap: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: 10,
+  },
+  nameLabel: {
+    fontSize: 11,
+    letterSpacing: 3,
+    color: 'rgba(255,255,255,0.35)',
+  },
+  nameRow: {
+    display: 'flex',
+    gap: 8,
+  },
+  nameInput: {
+    width: 90,
+    padding: '10px 0',
+    fontSize: 28,
+    fontWeight: 900,
+    letterSpacing: 10,
+    textAlign: 'center' as const,
+    background: 'rgba(255,255,255,0.05)',
+    border: '1px solid rgba(255,255,255,0.2)',
+    borderRadius: 8,
+    color: '#fff',
+    fontFamily: 'monospace',
+    outline: 'none',
+  },
+  nameBtn: {
+    padding: '0 16px',
+    fontSize: 14,
+    fontWeight: 700,
+    letterSpacing: 1,
+    background: 'linear-gradient(135deg, #818cf8, #6366f1)',
+    border: 'none',
+    borderRadius: 8,
+    color: '#fff',
+    cursor: 'pointer',
+  },
+  leaderboardLink: {
+    fontSize: 13,
+    color: '#818cf8',
+    textDecoration: 'none',
+    letterSpacing: 1,
   },
   playAgainBtn: {
     marginTop: 8,

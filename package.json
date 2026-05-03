@@ -7,10 +7,10 @@
     "build": "next build",
     "start": "NODE_ENV=production tsx server.ts",
     "agents": "tsx agents/runner.ts",
-    "agent:stress": "tsx agents/stress-tester.ts",
-    "agent:boundary": "tsx agents/boundary-player.ts",
-    "agent:disconnect": "tsx agents/disconnect-agent.ts",
-    "agent:latency": "tsx agents/latency-simulator.ts"
+    "agent:speed": "tsx agents/speed-demon.ts",
+    "agent:human": "tsx agents/average-human.ts",
+    "agent:strat": "tsx agents/strategist.ts",
+    "agent:surv": "tsx agents/survivor.ts"
   },
   "dependencies": {
     "next": "^15.3.1",
