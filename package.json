@@ -5,7 +5,12 @@
   "scripts": {
     "dev": "tsx server.ts",
     "build": "next build",
-    "start": "NODE_ENV=production tsx server.ts"
+    "start": "NODE_ENV=production tsx server.ts",
+    "agents": "tsx agents/runner.ts",
+    "agent:stress": "tsx agents/stress-tester.ts",
+    "agent:boundary": "tsx agents/boundary-player.ts",
+    "agent:disconnect": "tsx agents/disconnect-agent.ts",
+    "agent:latency": "tsx agents/latency-simulator.ts"
   },
   "dependencies": {
     "next": "^15.3.1",
