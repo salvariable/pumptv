@@ -6,12 +6,12 @@
  * Math: decay = 1 unit / 140ms. Each pump = +3 units.
  * To net 0: 1 pump per (3 * 140ms) = 1 pump / 420ms.
  */
-import { createAgentSession, simulateBalloon, sleep, fmt, DECAY_INTERVAL_MS, PUMP_AMOUNT } from './lib/session.js'
+import { createAgentSession, simulateBalloon, sleep, fmt, DECAY_INTERVAL_MS, PUMP_AMOUNT, AgentRunResult } from './lib/session.js'
 
 const EQUILIBRIUM_MS = DECAY_INTERVAL_MS * PUMP_AMOUNT // 420ms
 const DURATION_MS = 20000
 
-export async function runBoundaryPlayer() {
+export async function runBoundaryPlayer(): Promise<AgentRunResult> {
   const session = await createAgentSession()
   await session.startGame()
 
@@ -41,7 +41,8 @@ export async function runBoundaryPlayer() {
 
   return {
     name: 'boundary-player',
-    passed: drift < 20, // tolerate minor float/timing drift
+    passed: drift < 20,
+    metrics: { drift, avgBalloon: Math.round(avg * 10) / 10, minBalloon: min, maxBalloon: max, snapshots: snapshots.length },
     lines: [
       fmt('pump interval:', `${EQUILIBRIUM_MS}ms (theoretical equilibrium)`),
       fmt('snapshots:', `${snapshots.length} taken`),

@@ -1,12 +1,18 @@
 import { io, Socket } from 'socket.io-client'
 
-export const SERVER_URL = 'http://localhost:3000'
+export const SERVER_URL = `http://localhost:${process.env.PORT ?? '3000'}`
 
-// Game constants mirrored from play screen
 export const PUMP_AMOUNT = 3
 export const DECAY_AMOUNT = 1
 export const DECAY_INTERVAL_MS = 140
 export const WIN_THRESHOLD = 100
+
+export interface AgentRunResult {
+  name: string
+  passed: boolean
+  lines: string[]
+  metrics: Record<string, number>
+}
 
 export interface AgentSession {
   sessionId: string
@@ -18,8 +24,11 @@ export interface AgentSession {
   cleanup: () => void
 }
 
-function waitForEvent(socket: Socket, event: string): Promise<void> {
-  return new Promise(resolve => socket.once(event, resolve))
+function waitForEvent(socket: Socket, event: string, timeoutMs = 5000): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(`Timeout waiting for "${event}"`)), timeoutMs)
+    socket.once(event, () => { clearTimeout(timer); resolve() })
+  })
 }
 
 function connect(url: string): Promise<Socket> {
@@ -44,6 +53,7 @@ export async function createAgentSession(): Promise<AgentSession> {
     controllerSocket.emit('join-session', { sessionId }, (res: { ok?: boolean; error?: string }) => {
       if (res.error) reject(new Error(res.error))
     })
+    setTimeout(() => reject(new Error('join-session timeout')), 5000)
   })
 
   let _receivedPumps = 0
@@ -74,7 +84,6 @@ export async function createAgentSession(): Promise<AgentSession> {
   }
 }
 
-// Simulate balloon size given pumps received and elapsed time
 export function simulateBalloon(pumps: number, elapsedMs: number): number {
   const decayTicks = Math.floor(elapsedMs / DECAY_INTERVAL_MS)
   return Math.max(0, Math.min(WIN_THRESHOLD, pumps * PUMP_AMOUNT - decayTicks * DECAY_AMOUNT))

@@ -4,13 +4,13 @@
  * Simulates a high-latency mobile connection (e.g. weak 4G).
  * Measures: can the game still be won? How many extra pumps are needed vs. zero-latency?
  */
-import { createAgentSession, simulateBalloon, sleep, fmt, WIN_THRESHOLD } from './lib/session.js'
+import { createAgentSession, simulateBalloon, sleep, fmt, WIN_THRESHOLD, AgentRunResult } from './lib/session.js'
 
 const SIMULATED_LATENCY_MS = 200
 const PUMP_INTERVAL_MS = 80 // tap rate
 const MAX_DURATION_MS = 30000
 
-export async function runLatencySimulator() {
+export async function runLatencySimulator(): Promise<AgentRunResult> {
   const session = await createAgentSession()
   await session.startGame()
 
@@ -39,9 +39,17 @@ export async function runLatencySimulator() {
 
   session.cleanup()
 
+  const timeToWinSec = won ? Math.round(((elapsed - SIMULATED_LATENCY_MS) / 1000) * 10) / 10 : 0
   return {
     name: 'latency-simulator',
     passed: won,
+    metrics: {
+      won: won ? 1 : 0,
+      timeToWinSec,
+      sent,
+      received: session.receivedPumps(),
+      latencyMs: SIMULATED_LATENCY_MS,
+    },
     lines: [
       fmt('simulated latency:', `${SIMULATED_LATENCY_MS}ms per event`),
       fmt('pump interval:', `${PUMP_INTERVAL_MS}ms`),

@@ -6,12 +6,12 @@
  * Measures: does the server clean up state correctly on each disconnect/reconnect?
  */
 import { io } from 'socket.io-client'
-import { createAgentSession, SERVER_URL, sleep, fmt } from './lib/session.js'
+import { createAgentSession, SERVER_URL, sleep, fmt, AgentRunResult } from './lib/session.js'
 
 const ROUNDS = 5
 const PLAY_DURATION_MS = 2000
 
-export async function runDisconnectAgent() {
+export async function runDisconnectAgent(): Promise<AgentRunResult> {
   const session = await createAgentSession()
   await session.startGame()
 
@@ -68,9 +68,11 @@ export async function runDisconnectAgent() {
   const reconnects = results.filter(r => r.reconnected).length
   const disconnectEvents = results.filter(r => r.controllerDisconnectedReceived).length
 
+  const successRate = Math.round((reconnects / ROUNDS) * 100)
   return {
     name: 'disconnect-agent',
     passed: allPassed,
+    metrics: { rounds: ROUNDS, reconnects, disconnectEvents, successRate },
     lines: [
       fmt('rounds:', `${ROUNDS}`),
       fmt('reconnects:', `${reconnects}/${ROUNDS} ${reconnects === ROUNDS ? '✓' : '✗'}`),

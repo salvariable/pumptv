@@ -3,9 +3,9 @@
  * Pumps at ~100 events/sec for 5 seconds.
  * Measures: events sent vs received by play socket — any drops indicate server-side loss.
  */
-import { createAgentSession, sleep, fmt } from './lib/session.js'
+import { createAgentSession, sleep, fmt, AgentRunResult } from './lib/session.js'
 
-export async function runStressTester() {
+export async function runStressTester(): Promise<AgentRunResult> {
   const session = await createAgentSession()
   await session.startGame()
 
@@ -30,15 +30,17 @@ export async function runStressTester() {
 
   session.cleanup()
 
+  const ratePPS = Math.round(sent / (DURATION_MS / 1000))
   return {
     name: 'stress-tester',
     passed: drops === 0,
+    metrics: { sent, received, drops, ratePPS },
     lines: [
       fmt('sent:', `${sent} events`),
       fmt('received:', `${received} events`),
       fmt('drops:', drops === 0 ? '0 ✓' : `${drops} (${dropPct}%) ✗`),
       fmt('duration:', `${elapsed}s`),
-      fmt('rate:', `${(sent / (DURATION_MS / 1000)).toFixed(0)} events/sec`),
+      fmt('rate:', `${ratePPS} events/sec`),
     ],
   }
 }
